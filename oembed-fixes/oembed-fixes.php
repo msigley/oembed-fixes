@@ -3,7 +3,7 @@
 Plugin Name: oEmbed Fixes
 Plugin URI: http://github.com/msigley/
 Description: Fixes common issues with oEmbeds.
-Version: 1.0.0
+Version: 1.1.0
 Author: Matthew Sigley
 License: GPL2
 */
@@ -114,13 +114,23 @@ class oEmbed_Fixes {
 			$provider_data = array_intersect_key( $provider_data, array_flip( $allowed_providers ) );
 
 		$providers = array();
+		$potential_providers = array();
+		
 		foreach( $provider_data as $provider ) {
 			foreach( $provider['endpoints'] as $endpoint ) {
 				foreach( $endpoint['schemes'] as $scheme ) {
 					$providers[$scheme] = array( $endpoint['url'], false );
+					$wildcard_subdomain_pos = strpos( $scheme, '://*.' );
+					if( $wildcard_subdomain_pos === false )
+						continue;
+					
+					$potiential_scheme = substr_replace( $scheme, '://', $wildcard_subdomain_pos, 5 );
+					$potential_providers[$potiential_scheme] = $providers[$scheme];
 				}
 			}
 		}
+
+		$providers = $providers + $potential_providers;
 
 		$cached_providers[$cache_key] = $providers;
 		wp_cache_set( 'oembed_providers', $cached_providers, 'oembed_fixes' ); // Cache oembed providers for a week

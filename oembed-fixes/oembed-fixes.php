@@ -3,7 +3,7 @@
 Plugin Name: oEmbed Fixes
 Plugin URI: http://github.com/msigley/
 Description: Fixes common issues with oEmbeds.
-Version: 1.1.1
+Version: 1.1.2
 Author: Matthew Sigley
 License: GPL2
 */
@@ -114,8 +114,8 @@ class oEmbed_Fixes {
 			$provider_data = array_intersect_key( $provider_data, array_flip( $allowed_providers ) );
 
 		$providers = array();
-		$potential_providers = array();
 		
+		$potential_providers = array();
 		foreach( $provider_data as $provider ) {
 			foreach( $provider['endpoints'] as $endpoint ) {
 				foreach( $endpoint['schemes'] as $scheme ) {
@@ -129,7 +129,25 @@ class oEmbed_Fixes {
 				}
 			}
 		}
+		$providers = $providers + $potential_providers;
 
+		$potential_providers = array();
+		foreach( $providers as $scheme => $endpoint ) {
+			$domain_pos = strpos( $scheme, '://' );
+			if( $domain_pos === false )
+				continue;
+			
+			$potiential_scheme = false;
+			$protocol = substr( $scheme, 0, $domain_pos );
+			if( 'http' === $protocol )
+				$potiential_scheme = 'https' . substr( $scheme, $domain_pos );
+			else if( 'https' === $protocol )
+				$potiential_scheme = 'http' . substr( $scheme, $domain_pos );
+			if( $potiential_scheme === false )
+				continue;
+			
+			$potential_providers[$potiential_scheme] = $endpoint;
+		}
 		$providers = $providers + $potential_providers;
 
 		$cached_providers[$cache_key] = $providers;

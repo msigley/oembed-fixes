@@ -3,7 +3,7 @@
 Plugin Name: oEmbed Fixes
 Plugin URI: http://github.com/msigley/
 Description: Fixes common issues with oEmbeds.
-Version: 1.1.0
+Version: 1.1.1
 Author: Matthew Sigley
 License: GPL2
 */
@@ -41,7 +41,7 @@ class oEmbed_Fixes {
 	}
 
 	public function activation() {
-		mkdir( plugin_dir_path( __FILE__ ) . 'temp/', 0655 );
+		@mkdir( plugin_dir_path( __FILE__ ) . 'temp/', 0655 );
 		$this->download_oembed_providers();
 	}
 

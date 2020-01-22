@@ -3,7 +3,7 @@
 Plugin Name: oEmbed Fixes
 Plugin URI: http://github.com/msigley/
 Description: Fixes common issues with oEmbeds.
-Version: 1.1.2
+Version: 2.0.0
 Author: Matthew Sigley
 License: GPL2
 */
@@ -50,26 +50,46 @@ class oEmbed_Fixes {
 	}
 
 	public function embed_oembed_html( $html, $url, $attr ) {
-		//Fix z-index on oEmbed
-		if ( strpos( $html, '<embed src=' ) !== false ) { 
-			$html = str_replace('</param><embed', '</param><param name="wmode" value="opaque"></param><embed wmode="opaque" ', $html); 
-		} elseif ( strpos ( $html, 'feature=oembed' ) !== false ) { 
-			$html = str_replace( 'feature=oembed', 'feature=oembed&wmode=opaque', $html ); 
-		}
+		//Fix src parameters
+		$current_pos = 0;
+		while( $src_pos = stripos( $html, ' src=', $current_pos ) ) {
+			$src = '';
+			$src_quote = substr( $html, $src_pos+5, 1 );
+			$start_quote_pos = $src_pos + 6;
+			$end_quote_pos = strpos( $html, $src_quote, $start_quote_pos );
+			$src = substr( $html, $src_pos+6, $end_quote_pos - ( $start_quote_pos ) );
 
-		//Removes the video suggestions made by youtube when a video is complete and other fixes from the YouTube Iframe API
-		if ( strpos( $html, 'feature=oembed' ) !== false && strpos($html, 'youtube' ) !== false ) { 
-			$html = str_replace( 'feature=oembed', 'feature=oembed&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1', $html );
+			if( strpos($src, '?') )
+				$src .= '&';
+			else
+				$src .= '?';
+			
+			//Fix z-index
+			$src .= 'wmode=opaque';
+
+			//Mark embed as Do Not Track
+			$src .= '&dnt=1';
+
+			if( stripos( $src, '://www.youtube.com/embed' ) ) {
+				$src = str_replace( '://www.youtube.com/embed', '://www.youtube-nocookie.com/embed', $src );
+				//Removes the video suggestions made by youtube when a video is complete and other fixes from the YouTube Iframe API
+				$src .= '&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1';
+			}
+
+			//Removes the video suggestions made by youtube when a video is complete and other fixes from the YouTube Iframe API
+			if ( stripos( $html, 'feature=oembed' ) !== false && strpos($html, 'youtube' ) !== false ) { 
+				$html = str_replace( 'feature=oembed', 'feature=oembed&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1', $html );
+			}
+
+			$html = substr( $html, 0, $start_quote_pos ) . $src . substr( $html, $end_quote_pos );
+
+			$current_pos = $end_quote_pos + 1;
 		}
 
 		//Sandbox all iframe embeds. This prevents them from setting third party cookies.
-		if ( strpos( $html, "<iframe " ) !== false ) {
-			if( strpos($html, '://www.youtube.com/embed' ) !== false ) {
-				$html = str_replace( '://www.youtube.com/embed', '://www.youtube-nocookie.com/embed', $html );
-			} else {
-				$html = str_replace( '<iframe ', '<iframe sandbox="allow-scripts" referrerpolicy="origin-when-cross-origin" ', $html );
-			}
-		}
+		if ( stripos( $html, '<iframe' ) !== false )
+			$html = str_replace( '<iframe', '<iframe sandbox="allow-scripts allow-presentation allow-same-origin" referrerpolicy="origin-when-cross-origin" allow="autoplay;encrypted-media" ', $html );
+		
 		return $html;
 	}
 
@@ -118,6 +138,9 @@ class oEmbed_Fixes {
 		$potential_providers = array();
 		foreach( $provider_data as $provider ) {
 			foreach( $provider['endpoints'] as $endpoint ) {
+				if( empty( $endpoint['schemes'] ) )
+					continue;
+
 				foreach( $endpoint['schemes'] as $scheme ) {
 					$providers[$scheme] = array( $endpoint['url'], false );
 					$wildcard_subdomain_pos = strpos( $scheme, '://*.' );

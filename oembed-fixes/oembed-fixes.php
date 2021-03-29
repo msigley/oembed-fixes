@@ -3,7 +3,7 @@
 Plugin Name: oEmbed Fixes
 Plugin URI: http://github.com/msigley/
 Description: Fixes common issues with oEmbeds.
-Version: 2.0.0
+Version: 2.0.1
 Author: Matthew Sigley
 License: GPL2
 */
@@ -88,7 +88,7 @@ class oEmbed_Fixes {
 
 		//Sandbox all iframe embeds. This prevents them from setting third party cookies.
 		if ( stripos( $html, '<iframe' ) !== false )
-			$html = str_replace( '<iframe', '<iframe sandbox="allow-scripts allow-presentation allow-same-origin" referrerpolicy="origin-when-cross-origin" allow="autoplay;encrypted-media" ', $html );
+			$html = str_replace( '<iframe', '<iframe sandbox="allow-scripts allow-presentation allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="origin-when-cross-origin" allow="autoplay;encrypted-media" ', $html );
 		
 		return $html;
 	}
